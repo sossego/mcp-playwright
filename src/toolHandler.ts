@@ -17,7 +17,8 @@ import {
   ConsoleLogsTool,
   ExpectResponseTool,
   AssertResponseTool,
-  CustomUserAgentTool
+  CustomUserAgentTool,
+  LoadCookiesTool
 } from './tools/browser/index.js';
 import {
   ClickTool,
@@ -86,6 +87,7 @@ let assertResponseTool: AssertResponseTool;
 let customUserAgentTool: CustomUserAgentTool;
 let visibleTextTool: VisibleTextTool;
 let visibleHtmlTool: VisibleHtmlTool;
+let loadCookiesTool: LoadCookiesTool;
 
 let getRequestTool: GetRequestTool;
 let postRequestTool: PostRequestTool;
@@ -331,6 +333,7 @@ function initializeTools(server: any) {
   if (!customUserAgentTool) customUserAgentTool = new CustomUserAgentTool(server);
   if (!visibleTextTool) visibleTextTool = new VisibleTextTool(server);
   if (!visibleHtmlTool) visibleHtmlTool = new VisibleHtmlTool(server);
+  if (!loadCookiesTool) loadCookiesTool = new LoadCookiesTool(server);
   
   // API tools
   if (!getRequestTool) getRequestTool = new GetRequestTool(server);
@@ -549,6 +552,8 @@ export async function handleToolCall(
         return await saveAsPdfTool.execute(args, context);
       case "playwright_click_and_switch_tab":
         return await clickAndSwitchTabTool.execute(args, context);
+      case "load_cookies":
+        return await loadCookiesTool.execute(args, context);
       
       default:
         return {
