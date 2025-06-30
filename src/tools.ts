@@ -443,6 +443,17 @@ export function createToolDefinitions() {
         required: ["selector"],
       },
     },
+    {
+      name: "load_cookies",
+      description: "Load cookies from Redis using a redis_key and set them in the browser context",
+      inputSchema: {
+        type: "object",
+        properties: {
+          redis_key: { type: "string", description: "Redis key to fetch cookies from" },
+        },
+        required: ["redis_key"],
+      },
+    },
   ] as const satisfies Tool[];
 }
 
@@ -469,7 +480,8 @@ export const BROWSER_TOOLS = [
   "playwright_drag",
   "playwright_press_key",
   "playwright_save_as_pdf",
-  "playwright_click_and_switch_tab"
+  "playwright_click_and_switch_tab",
+  "load_cookies"
 ];
 
 // API Request tools for conditional launch
