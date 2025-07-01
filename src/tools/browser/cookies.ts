@@ -77,7 +77,7 @@ export class LoadCookiesTool extends BrowserToolBase {
    * Extract cookies from JSON data using the specified path
    * Example: path "xpto.cookies" will extract data.xpto.cookies from the JSON
    */
-  private extractCookiesFromPath(jsonData: any, path: string): Array<{name: string, value: string, domain?: string, path?: string, expires?: number, httpOnly?: boolean, secure?: boolean, sameSite?: string}> {
+  private extractCookiesFromPath(jsonData: any, path: string): Array<{name: string, value: string, domain?: string, path?: string, expires?: number, httpOnly?: boolean, secure?: boolean, sameSite?: 'Strict' | 'Lax' | 'None'}> {
     const pathParts = path.split('.');
     let current = jsonData;
     
@@ -101,6 +101,13 @@ export class LoadCookiesTool extends BrowserToolBase {
       typeof cookie === 'object' && 
       'name' in cookie && 
       'value' in cookie
-    );
+    ).map(cookie => {
+      // Validate sameSite value and set to undefined if invalid
+      if (cookie.sameSite && !['Strict', 'Lax', 'None'].includes(cookie.sameSite)) {
+        const { sameSite, ...cookieWithoutSameSite } = cookie;
+        return cookieWithoutSameSite;
+      }
+      return cookie;
+    });
   }
 }
