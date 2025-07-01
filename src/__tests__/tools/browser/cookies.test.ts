@@ -52,6 +52,7 @@ const mockToolContext = {
 
 describe('LoadCookiesTool', () => {
   let loadCookiesTool: LoadCookiesTool;
+  const originalEnv = process.env;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -61,11 +62,44 @@ describe('LoadCookiesTool', () => {
     mockIsClosed.mockReturnValue(false);
     mockRedisConnect.mockImplementation(() => Promise.resolve());
     mockRedisDisconnect.mockImplementation(() => Promise.resolve());
+    
+    // Set up environment variable for tests
+    process.env = { ...originalEnv };
+    process.env.REDIS_PATH = 'xpto.cookies';
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
   });
 
   test('should load cookies from Redis successfully', async () => {
-    const testCookiesString = 'session=abc123; user=johndoe; theme=dark';
-    mockRedisGet.mockImplementation(() => Promise.resolve(testCookiesString));
+    const testJsonData = {
+      xpto: {
+        cookies: [
+          {
+            name: "JSESSIONID",
+            value: "\"fdsasdasdjlE1\"",
+            domain: "www.xxx.com.br",
+            path: "/xxx",
+            expires: -1,
+            httpOnly: false,
+            secure: false,
+            sameSite: "None"
+          },
+          {
+            name: "Xpto",
+            value: "123",
+            domain: "www.xxx.com.br",
+            path: "/xxx",
+            expires: -1,
+            httpOnly: false,
+            secure: false,
+            sameSite: "None"
+          }
+        ]
+      }
+    };
+    mockRedisGet.mockImplementation(() => Promise.resolve(JSON.stringify(testJsonData)));
 
     const args = { redis_key: 'test_cookies' };
     const result = await loadCookiesTool.execute(args, mockToolContext);
@@ -73,13 +107,30 @@ describe('LoadCookiesTool', () => {
     expect(mockRedisConnect).toHaveBeenCalled();
     expect(mockRedisGet).toHaveBeenCalledWith('test_cookies');
     expect(mockAddCookies).toHaveBeenCalledWith([
-      { name: 'session', value: 'abc123', domain: '.localhost', path: '/' },
-      { name: 'user', value: 'johndoe', domain: '.localhost', path: '/' },
-      { name: 'theme', value: 'dark', domain: '.localhost', path: '/' }
+      {
+        name: "JSESSIONID",
+        value: "\"fdsasdasdjlE1\"",
+        domain: "www.xxx.com.br",
+        path: "/xxx",
+        expires: -1,
+        httpOnly: false,
+        secure: false,
+        sameSite: "None"
+      },
+      {
+        name: "Xpto",
+        value: "123",
+        domain: "www.xxx.com.br",
+        path: "/xxx",
+        expires: -1,
+        httpOnly: false,
+        secure: false,
+        sameSite: "None"
+      }
     ]);
     expect(mockRedisDisconnect).toHaveBeenCalled();
     expect(result.isError).toBe(false);
-    expect(result.content[0].text).toContain('Successfully loaded 3 cookies');
+    expect(result.content[0].text).toContain('Successfully loaded 2 cookies');
   });
 
   test('should handle missing redis_key parameter', async () => {
@@ -90,6 +141,16 @@ describe('LoadCookiesTool', () => {
     expect(result.content[0].text).toContain('redis_key parameter is required');
   });
 
+  test('should handle missing REDIS_PATH environment variable', async () => {
+    delete process.env.REDIS_PATH;
+    
+    const args = { redis_key: 'test_cookies' };
+    const result = await loadCookiesTool.execute(args, mockToolContext);
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('REDIS_PATH environment variable is required');
+  });
+
   test('should handle non-existent Redis key', async () => {
     mockRedisGet.mockImplementation(() => Promise.resolve(null));
 
@@ -97,7 +158,7 @@ describe('LoadCookiesTool', () => {
     const result = await loadCookiesTool.execute(args, mockToolContext);
 
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain('No cookies found for key: nonexistent_key');
+    expect(result.content[0].text).toContain('No data found for key: nonexistent_key');
     expect(mockRedisDisconnect).toHaveBeenCalled();
   });
 
@@ -112,27 +173,66 @@ describe('LoadCookiesTool', () => {
     expect(mockRedisDisconnect).toHaveBeenCalled();
   });
 
-  test('should handle invalid cookie format', async () => {
-    mockRedisGet.mockImplementation(() => Promise.resolve('invalid_cookie_format'));
+  test('should handle invalid JSON format', async () => {
+    mockRedisGet.mockImplementation(() => Promise.resolve('invalid_json_format'));
 
     const args = { redis_key: 'test_cookies' };
     const result = await loadCookiesTool.execute(args, mockToolContext);
 
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain('Invalid cookie format for key: test_cookies');
+    expect(result.content[0].text).toContain('Invalid JSON format for key: test_cookies');
     expect(mockRedisDisconnect).toHaveBeenCalled();
   });
 
-  test('should handle cookies with equals signs in values', async () => {
-    const testCookiesString = 'token=jwt=eyJ123; data=name=john,age=30';
-    mockRedisGet.mockImplementation(() => Promise.resolve(testCookiesString));
+  test('should handle invalid cookie path', async () => {
+    const testJsonData = {
+      different: {
+        path: []
+      }
+    };
+    mockRedisGet.mockImplementation(() => Promise.resolve(JSON.stringify(testJsonData)));
+
+    const args = { redis_key: 'test_cookies' };
+    const result = await loadCookiesTool.execute(args, mockToolContext);
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('No cookies found at path: xpto.cookies');
+    expect(mockRedisDisconnect).toHaveBeenCalled();
+  });
+
+  test('should handle cookies with complex values', async () => {
+    const testJsonData = {
+      xpto: {
+        cookies: [
+          {
+            name: "token",
+            value: "jwt=eyJ123",
+            domain: "example.com",
+            path: "/",
+            expires: 1234567890,
+            httpOnly: true,
+            secure: true,
+            sameSite: "Strict"
+          }
+        ]
+      }
+    };
+    mockRedisGet.mockImplementation(() => Promise.resolve(JSON.stringify(testJsonData)));
 
     const args = { redis_key: 'test_cookies' };
     const result = await loadCookiesTool.execute(args, mockToolContext);
 
     expect(mockAddCookies).toHaveBeenCalledWith([
-      { name: 'token', value: 'jwt=eyJ123', domain: '.localhost', path: '/' },
-      { name: 'data', value: 'name=john,age=30', domain: '.localhost', path: '/' }
+      {
+        name: "token",
+        value: "jwt=eyJ123",
+        domain: "example.com",
+        path: "/",
+        expires: 1234567890,
+        httpOnly: true,
+        secure: true,
+        sameSite: "Strict"
+      }
     ]);
     expect(result.isError).toBe(false);
   });
