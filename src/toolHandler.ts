@@ -12,6 +12,7 @@ import {
 } from './tools/codegen/index.js';
 import { 
   ScreenshotTool,
+  DownloadTool,
   NavigationTool,
   CloseBrowserTool,
   ConsoleLogsTool,
@@ -71,6 +72,7 @@ export function setGlobalPage(newPage: Page): void {
 }
 // Tool instances
 let screenshotTool: ScreenshotTool;
+let downloadTool: DownloadTool;
 let navigationTool: NavigationTool;
 let closeBrowserTool: CloseBrowserTool;
 let consoleLogsTool: ConsoleLogsTool;
@@ -317,6 +319,7 @@ async function ensureApiContext(url: string) {
 function initializeTools(server: any) {
   // Browser tools
   if (!screenshotTool) screenshotTool = new ScreenshotTool(server);
+  if (!downloadTool) downloadTool = new DownloadTool(server);
   if (!navigationTool) navigationTool = new NavigationTool(server);
   if (!closeBrowserTool) closeBrowserTool = new CloseBrowserTool(server);
   if (!consoleLogsTool) consoleLogsTool = new ConsoleLogsTool(server);
@@ -478,6 +481,9 @@ export async function handleToolCall(
       case "playwright_screenshot":
         return await screenshotTool.execute(args, context);
         
+      case "playwright_download":
+        return await downloadTool.execute(args, context);
+        
       case "playwright_close":
         return await closeBrowserTool.execute(args, context);
         
@@ -635,6 +641,13 @@ export function getConsoleLogs(): string[] {
  */
 export function getScreenshots(): Map<string, string> {
   return screenshotTool?.getScreenshots() ?? new Map();
+}
+
+/**
+ * Get downloads
+ */
+export function getDownloads(): Map<string, any> {
+  return downloadTool?.getDownloads() ?? new Map();
 }
 
 export { registerConsoleMessage };
