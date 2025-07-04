@@ -1,0 +1,16 @@
+{
+    "servers": {
+        "playwright-local": {
+            "command": "node",
+            "args": [
+                "./dist/index.js"
+            ]
+        },
+        "playwright-remote": {
+            "command": "npx",
+            "args": [
+                "@sossego/playwright-mcp-server@latest"
+            ]
+        }
+    }
+}
