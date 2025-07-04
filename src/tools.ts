@@ -111,6 +111,23 @@ export function createToolDefinitions() {
       },
     },
     {
+      name: "playwright_download",
+      description: "Wait for and handle file downloads triggered by user-defined events",
+      inputSchema: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "Name identifier for the download" },
+          trigger: { 
+            type: ["string", "object"], 
+            description: "Event trigger - CSS selector string for click, or object with type/selector/script properties" 
+          },
+          timeout: { type: "number", description: "Timeout in milliseconds to wait for download (default: 30000)" },
+          downloadsDir: { type: "string", description: "Custom downloads directory path (default: user's Downloads folder)" },
+        },
+        required: ["name", "trigger"],
+      },
+    },
+    {
       name: "playwright_click",
       description: "Click an element on the page",
       inputSchema: {
@@ -461,6 +478,7 @@ export function createToolDefinitions() {
 export const BROWSER_TOOLS = [
   "playwright_navigate",
   "playwright_screenshot",
+  "playwright_download",
   "playwright_click",
   "playwright_iframe_click",
   "playwright_iframe_fill",
