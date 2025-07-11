@@ -173,6 +173,22 @@ export async function ensureBrowser(browserSettings?: BrowserSettings) {
       resetBrowserState();
     }
 
+    const DEFAULT_ARGS = [
+        "--disable-blink-features=AutomationControlled",
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-web-security",
+        "--allow-running-insecure-content",
+        "--content-shell-hide-toolbar",
+        "--disable-features",
+        "--disable-popup-blocking",
+        "--disable-infobars",
+        "--disable-translate",
+        "--enable-geolocation",
+        "--window-size=1280,800"
+    ]
+    
     // Launch new browser if needed
     if (!browser) {
       const { viewport, userAgent, headless = false, browserType = 'chromium' } = browserSettings ?? {};
@@ -208,7 +224,8 @@ export async function ensureBrowser(browserSettings?: BrowserSettings) {
 
       browser = await browserInstance.launch({
         headless,
-        executablePath: executablePath
+        executablePath: executablePath,
+        args: DEFAULT_ARGS
       });
       
       currentBrowserType = browserType;
@@ -227,6 +244,11 @@ export async function ensureBrowser(browserSettings?: BrowserSettings) {
           height: viewport?.height ?? 720,
         },
         deviceScaleFactor: 1,
+        ignoreHTTPSErrors: true,
+        bypassCSP: true,
+        locale: "pt-BR",
+        timezoneId: "America/Sao_Paulo",
+        acceptDownloads: true
       });
 
       page = await context.newPage();
@@ -278,7 +300,7 @@ export async function ensureBrowser(browserSettings?: BrowserSettings) {
         break;
     }
     
-    browser = await browserInstance.launch({ headless });
+    browser = await browserInstance.launch({ headless, args: DEFAULT_ARGS });
     currentBrowserType = browserType;
     
     browser.on('disconnected', () => {
@@ -294,6 +316,11 @@ export async function ensureBrowser(browserSettings?: BrowserSettings) {
         height: viewport?.height ?? 720,
       },
       deviceScaleFactor: 1,
+      ignoreHTTPSErrors: true,
+      bypassCSP: true,
+      locale: "pt-BR",
+      timezoneId: "America/Sao_Paulo",
+      acceptDownloads: true
     });
 
     page = await context.newPage();
@@ -429,7 +456,9 @@ export async function handleToolCall(
   const context: ToolContext = {
     server
   };
-  
+
+  const DEFAULT_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36';
+
   // Set up browser if needed
   if (BROWSER_TOOLS.includes(name)) {
     const browserSettings = {
@@ -437,7 +466,7 @@ export async function handleToolCall(
         width: args.width,
         height: args.height
       },
-      userAgent: name === "playwright_custom_user_agent" ? args.userAgent : undefined,
+      userAgent: name === "playwright_custom_user_agent" ? args.userAgent : DEFAULT_UA,
       headless: args.headless,
       browserType: args.browserType || 'chromium'
     };
