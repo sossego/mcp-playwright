@@ -55,6 +55,10 @@ export class LoadCookiesTool extends BrowserToolBase {
 
         // Set cookies in the browser context
         await page.context().addCookies(cookies);
+        const url: string = jsonData.url || jsonData.session?.url || page.url();
+        if (url && url !== page.url()) {
+          await page.goto(url);
+        }
 
         return createSuccessResponse(`Successfully loaded ${cookies.length} cookies from Redis key: ${redis_key}, path: ${redisPath}`);
 
